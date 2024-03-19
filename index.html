@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.png">
+    <title>Bestiary Entry Generator</title>
+</head>
+<body class="dark-theme">
+    <main class="main-style">
+        <div class="mob-data form" id="mob-data">
+            <label class="title" for="mob-data">Mob Data</label>
+            <div class="form-row">
+                <label for="mob_id">Mob ID</label>
+                <input type="text" name="mob_id" id="mob_id">
+            </div>
+            <div class="form-row">
+                <label for="behavior">Behavior</label>
+                <select name="behavior" id="behavior">
+                    <option value="passive">Passive</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="agressive">Agressive</option>
+                    <option value="boss">Boss</option>
+                </select>
+            </div>        
+            <div class="loot">
+                <label class="title" for="loot">Loot</label>
+                <div class="loot-entries" id="loot-entries">
+                </div>
+                <button class="add-loot-button" id="add-loot">+ Add Loot</button>
+            </div>
+            <button class="generate-json-btn" id="generate-mob-data">Download Bestiary Entry</button>
+        </div>            
+        <div class="lang form" id="lang">
+            <label class="title" for="lang">Lang</label>
+            <div class="form-row">
+                <label for="lang-name">Name</label>
+                <input type="text" name="lang-name" id="lang-name">
+            </div>
+            <div class="form-row">
+                <label for="lang-spawn-condition">Spawn Condition</label>
+                <input type="text" name="lang-spawn-condition" id="lang-spawn-condition">
+            </div>
+            <div class="form-row">
+                <label for="lang-description">Description</label>
+                <textarea name="lang-description" id="lang-description" cols="30" rows="10"></textarea>
+            </div>
+            <button class="generate-json-btn" id="generate-lang">Download Lang File</button>
+        </div>     
+    </main>
+</body>
+<script src="parser.js"></script>
+</html>
