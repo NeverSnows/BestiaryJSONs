@@ -40,9 +40,12 @@ const JSONSerializer = {
         const langName = document.getElementById('lang-name').value;
         const langSpawnCondition = document.getElementById('lang-spawn-condition').value;
         const langDescription = document.getElementById('lang-description').value;
-        const output = `{\n\t"bestiary.mob.${mobID}.name": "${langName}",\n\t"bestiary.mob.${mobID}.spawn_condition": "${langSpawnCondition}",\n\t"bestiary.mob.${mobID}.description": "${langDescription}",\n} `
+        const output = `{\n\t"${JSONSerializer.getLangSyntax(mobID)}.name": "${langName}",\n\t"${JSONSerializer.getLangSyntax(mobID)}.spawn_condition": "${langSpawnCondition}",\n\t"${JSONSerializer.getLangSyntax(mobID)}.description": "${langDescription}",\n} `
         console.log(output);
         JSONSerializer.generateJSONFile(output, mobID + '_lang');
+    },
+    getLangSyntax(mobID){
+        return `bestiary.mob.${mobID}`;
     },
     generateMobData(){
         let mobID = document.getElementById('mob_id').value;
