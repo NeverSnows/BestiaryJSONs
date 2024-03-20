@@ -90,3 +90,5 @@ body{
 .delete-loot{
     color: var(--deleteFilterBtn);
 }
+.drop-zone{
+}

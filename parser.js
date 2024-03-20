@@ -1,79 +1,172 @@
 
 const DOM = {
-    getLootElement(){
-        return `
-        <div class="form-row">
-            <label for="item-id">Item ID</label>
-            <input type="text" name="item-id" id="item-id">
-        </div>
-        <div class="form-row">
-            <label for="quantity">Quantity</label>
-            <input type="text" name="quantity" id="quantity">
-        </div>
-        <div class="form-row">
-            <label for="rarity">Rarity</label>
-            <select name="rarity" id="rarity">
-                <option value="normal">Normal</option>
-                <option value="rare">Rare</option>
-                <option value="super-rare">Super Rare</option>
-                <option value="conditional">Conditional</option>
-            </select>
-        </div>
-        <button class="delete-loot" id="delete-loot">X</button>
-        `;
-    },
-    addLoot(){
+    createLootEntry(pSource = '', pItemId = '', pQuantity = '', pRarity = ''){
         const lootEntry = document.createElement('div');
-        lootEntry.innerHTML = DOM.getLootElement();
         lootEntry.classList.add('loot-entry');
+
+        function createFormRow(labelText, inputType, inputId, inputValue) {
+            const formRow = document.createElement('div');
+            formRow.classList.add('form-row');
+
+            const label = document.createElement('label');
+            label.htmlFor = inputId;
+            label.textContent = labelText;
+
+            const input = document.createElement('input');
+            input.type = inputType;
+            input.id = inputId;
+            input.value = inputValue;
+
+            formRow.appendChild(label);
+            formRow.appendChild(input);
+
+            return formRow;
+        }
+
+        lootEntry.appendChild(createFormRow('Item Source', 'text', 'item-source', pSource));
+        lootEntry.appendChild(createFormRow('Item ID', 'text', 'item-id', pItemId));
+        lootEntry.appendChild(createFormRow('Quantity', 'text', 'quantity', pQuantity));
+
+        const rarityRow = document.createElement('div');
+        rarityRow.classList.add('form-row');
+
+        const rarityLabel = document.createElement('label');
+        rarityLabel.htmlFor = 'rarity';
+        rarityLabel.textContent = 'Rarity';
+
+        const raritySelect = document.createElement('select');
+        raritySelect.name = 'rarity';
+        raritySelect.id = 'rarity';
+
+        const rarities = ['Normal', 'Rare', 'Super Rare', 'Conditional'];
+        rarities.forEach(rarity => {
+            const option = document.createElement('option');
+            const rarityValue = rarity.toLowerCase().replace(' ', '-');
+            option.value = rarityValue;
+            option.textContent = rarity;
+            console.log("rarity: " + rarity + " prarity: " + pRarity);
+            if(rarityValue == (pRarity.replace('_', '-'))){
+                option.selected = true;
+            }
+            raritySelect.appendChild(option);
+        });
+
+        rarityRow.appendChild(rarityLabel);
+        rarityRow.appendChild(raritySelect);
+        lootEntry.appendChild(rarityRow);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.classList.add('delete-loot');
+        deleteButton.id = 'delete-loot';
+        deleteButton.textContent = 'X';
+        lootEntry.appendChild(deleteButton);
+
+        return lootEntry;
+    },
+    addLoot(source, itemId, quantity, rarity){
+        const lootEntry = DOM.createLootEntry(source, itemId, quantity, rarity)
         document.getElementById('loot-entries').appendChild(lootEntry);
         App.reload();
     }, 
+    onAddLoot(){
+        DOM.addLoot();
+    },
     deleteLoot(event){
         event.target.parentElement.remove();
+    },
+
+    onInsertFile(event){
+        const curFiles = event.target.files;
+
+        if(curFiles.length !== 0 && Utils.isValidFileType(curFiles[0])){
+            let reader = new FileReader();
+            reader.onload = (evt) => {
+                let result = evt.target.result;
+                console.log(result);
+                DOM.setFieldsFromJSON(JSON.parse(result));
+            }
+            reader.readAsText(curFiles[0]);
+        }
+    },
+    setFieldsFromJSON(object){
+        document.getElementById('source').value = Utils.getSourceFromID(object.mob_id).source;
+        document.getElementById('mob-id').value = Utils.getSourceFromID(object.mob_id).id;
+        document.getElementById('behavior').value = object.behavior;
+        object.loot.forEach(entry =>{
+            const source = Utils.getSourceFromID(entry.item).source;
+            const itemId = Utils.getSourceFromID(entry.item).id;
+
+            DOM.addLoot(source, itemId, entry.quantity, entry.drop_rate);
+        });
+    }
+}
+const Utils = {
+    imgFileTypes: [
+        "application/json"
+    ],
+    isValidFileType(file) {  
+        return this.imgFileTypes.includes(file.type);
+    },
+    getSourceFromID(gameId = ''){
+        const dataArray = gameId.split(':');
+
+        return {
+            source: dataArray[0],
+            id: dataArray[1]
+        };
+            
     }
 }
 const JSONSerializer = {
     generateLang(){
-        let mobID = document.getElementById('mob_id').value;
-        mobID = mobID.replace(':', '_');
         const langName = document.getElementById('lang-name').value;
         const langSpawnCondition = document.getElementById('lang-spawn-condition').value;
         const langDescription = document.getElementById('lang-description').value;
-        const output = `{\n\t"${JSONSerializer.getLangSyntax(mobID)}.name": "${langName}",\n\t"${JSONSerializer.getLangSyntax(mobID)}.spawn_condition": "${langSpawnCondition}",\n\t"${JSONSerializer.getLangSyntax(mobID)}.description": "${langDescription}",\n} `
-        console.log(output);
-        JSONSerializer.generateJSONFile(output, mobID + '_lang');
+
+        const outputObject = {};
+        outputObject[JSONSerializer.getLangKey() + `name`] = langName;
+        outputObject[JSONSerializer.getLangKey() + `spawn_condition`] = langSpawnCondition;
+        outputObject[JSONSerializer.getLangKey() + `description`] = langDescription;
+
+        console.log(JSON.stringify(outputObject, null, 2));
+        //JSONSerializer.generateJSONFile(outputObject, mobID + '_lang');
     },
-    getLangSyntax(mobID){
-        return `bestiary.mob.${mobID}`;
+    getLangKey(){
+        const source = document.getElementById('source').value;
+        const mobID = document.getElementById('mob-id').value;
+        return `snowsbestiary.entry.${source + '.' + mobID}.`;
     },
     generateMobData(){
-        let mobID = document.getElementById('mob_id').value;
-        const behavior = document.getElementById('mob_id').value;
+        const source = document.getElementById('source').value;
+        const mobID = document.getElementById('mob-id').value;
+        const behavior = document.getElementById('mob-id').value;
         const lootElements = document.querySelectorAll('.loot-entry');
 
-        let output = `{\n\t"mob_id": "${mobID}",\n\t"behavior": "${behavior}"`;
+        const outputObject = {
+            modId: source + ':' + mobID,
+            behavior: behavior
+        }
 
         if(lootElements.length > 0){
-            output += `,\n\t"loot": [`;
+            outputObject.loot = [];
 
             lootElements.forEach((element, index) =>{
+                const itemSource = element.querySelector('#item-source').value;
                 const itemID = element.querySelector('#item-id').value;
                 const quantity = element.querySelector('#quantity').value;
                 const rarity = element.querySelector('#rarity').value;
                 
-                output += `\n\t\t{\n\t\t\t"item": "${itemID}",\n\t\t\t"quantity": "${quantity}",\n\t\t\t"rarity": "${rarity}"\n\t\t}`;
-                
-                if(index < lootElements.length - 1){
-                    output += `,`;                    
-                }
+                const lootObject = {
+                    itemID: itemSource + ':' + itemID,
+                    quantity: quantity,
+                    rarity: rarity
+                };
+                outputObject.loot.push(lootObject);
             });
-            output += `\n\t]\n}`;
-        }else{
-            output += `\n}`;
         }
-        console.log(output);
-        JSONSerializer.generateJSONFile(output, mobID.replace(':', "_"));
+
+        console.log(JSON.stringify(outputObject, null, 2));
+        //JSONSerializer.generateJSONFile(outputObject, source + '_' + mobID);
     },
 
     generateJSONFile(fileContent = '', fileName ='file'){
@@ -88,9 +181,10 @@ const JSONSerializer = {
 
 const EventListeners = {
     addStaticEventListeners(){
-        document.getElementById('add-loot').addEventListener('click', DOM.addLoot);
+        document.getElementById('add-loot').addEventListener('click', DOM.onAddLoot);
         document.getElementById('generate-mob-data').addEventListener('click', JSONSerializer.generateMobData);
         document.getElementById('generate-lang').addEventListener('click', JSONSerializer.generateLang);
+        document.getElementById('file-input').addEventListener('change', DOM.onInsertFile);
     },
     addDynamicEventListeners(){
         document.querySelectorAll('#delete-loot').forEach(element => {
