@@ -1,4 +1,3 @@
-
 const DOM = {
     createLootEntry(pSource = '', pItemId = '', pQuantity = '', pRarity = ''){
         const lootEntry = document.createElement('div');
@@ -44,7 +43,6 @@ const DOM = {
             const rarityValue = rarity.toLowerCase().replace(' ', '-');
             option.value = rarityValue;
             option.textContent = rarity;
-            console.log("rarity: " + rarity + " prarity: " + pRarity);
             if(rarityValue == (pRarity.replace('_', '-'))){
                 option.selected = true;
             }
@@ -74,21 +72,30 @@ const DOM = {
     deleteLoot(event){
         event.target.parentElement.remove();
     },
+    deleteAllLootEntries(){
+        document.getElementById('loot-entries').innerHTML = '';
+    },
 
     onInsertFile(event){
         const curFiles = event.target.files;
 
-        if(curFiles.length !== 0 && Utils.isValidFileType(curFiles[0])){
+        if(curFiles.length !== 0){
             let reader = new FileReader();
             reader.onload = (evt) => {
                 let result = evt.target.result;
                 console.log(result);
-                DOM.setFieldsFromJSON(JSON.parse(result));
+                if(Utils.isJSON(curFiles[0])){
+                    DOM.setFieldsFromJSON(JSON.parse(result));
+                }else if(Utils.isZip(curFiles[0])){
+                    DOM.unpackZip(result)
+                }
             }
             reader.readAsText(curFiles[0]);
         }
     },
+
     setFieldsFromJSON(object){
+        DOM.deleteAllLootEntries();
         document.getElementById('source').value = Utils.getSourceFromID(object.mob_id).source;
         document.getElementById('mob-id').value = Utils.getSourceFromID(object.mob_id).id;
         document.getElementById('behavior').value = object.behavior;
@@ -98,15 +105,25 @@ const DOM = {
 
             DOM.addLoot(source, itemId, entry.quantity, entry.drop_rate);
         });
+    },
+    unpackZip(zipFile){  
+        /*      
+        JSZip.loadAsync(zipFile).then(zip => {
+            console.log(zip);
+        }).catch(err => {
+            console.error("Failed to open" + filename + " as ZIP file: " + err);
+        })
+        */
     }
 }
 const Utils = {
-    imgFileTypes: [
-        "application/json"
-    ],
-    isValidFileType(file) {  
-        return this.imgFileTypes.includes(file.type);
+    isJSON(file) {  
+        return file.type == 'application/json';
     },
+    isZip(file){
+        return file.type == 'application/zip';
+    },
+
     getSourceFromID(gameId = ''){
         const dataArray = gameId.split(':');
 
@@ -129,7 +146,7 @@ const JSONSerializer = {
         outputObject[JSONSerializer.getLangKey() + `description`] = langDescription;
 
         console.log(JSON.stringify(outputObject, null, 2));
-        //JSONSerializer.generateJSONFile(outputObject, mobID + '_lang');
+        JSONSerializer.generateJSONFile(outputObject, mobID + '_lang');
     },
     getLangKey(){
         const source = document.getElementById('source').value;
@@ -143,7 +160,7 @@ const JSONSerializer = {
         const lootElements = document.querySelectorAll('.loot-entry');
 
         const outputObject = {
-            modId: source + ':' + mobID,
+            mod_id: source + ':' + mobID,
             behavior: behavior
         }
 
@@ -159,18 +176,18 @@ const JSONSerializer = {
                 const lootObject = {
                     itemID: itemSource + ':' + itemID,
                     quantity: quantity,
-                    rarity: rarity
+                    drop_rate: rarity
                 };
                 outputObject.loot.push(lootObject);
             });
         }
 
         console.log(JSON.stringify(outputObject, null, 2));
-        //JSONSerializer.generateJSONFile(outputObject, source + '_' + mobID);
+        JSONSerializer.generateJSONFile(outputObject, source + '_' + mobID);
     },
 
     generateJSONFile(fileContent = '', fileName ='file'){
-        let blobFile = new Blob([fileContent], { type: 'application/json'});
+        let blobFile = new Blob([JSON.stringify(fileContent, null, 2)], { type: 'application/json'});
         let link = document.createElement('a');
         link.download = fileName + '.json';
         link.href = window.URL.createObjectURL(blobFile);
